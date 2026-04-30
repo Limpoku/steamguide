@@ -1,0 +1,6 @@
+gradio
+langchain
+langchain-ollama
+requests
+duckduckgo-search
+langchain-community
