@@ -67,9 +67,17 @@ def search_games(query):
         elif details.get("price_overview"):
             po = details["price_overview"]
 
-            price = po.get("final_formatted", "Check on Steam")
-            original_price = po.get("initial_formatted", "")
             discount = po.get("discount_percent", 0)
+
+            final_price = po.get("final", 0)
+            initial_price = po.get("initial", 0)
+
+            currency = po.get("currency", "EUR")
+
+            price = f"{final_price / 100:.2f} {currency}"
+
+            if discount > 0:
+                original_price = f"{initial_price / 100:.2f} {currency}"
 
         # 🎯 TAGS (genres)
         tags = [g["description"] for g in details.get("genres", [])] if details else []
