@@ -98,4 +98,4 @@ STEAMGUIDE/
 
 ## 👨‍💻 Author
 
-Francisco — AI Engineer Student
+Francisco Coelho — AI Engineer Student
