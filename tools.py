@@ -38,18 +38,6 @@ def get_player_info(steamid: str):
 - Favorite Games: {", ".join(player['favorite_games'])}
 """
 
-@tool
-def suggest_similar_games(game_id: str):
-    """
-    Suggest similar games based on a given game ID.
-    """
-
-    mapping = {
-        "CP77": ["The Witcher 3", "Starfield"],
-        "ER": ["Dark Souls 3", "Sekiro"]
-    }
-
-    return ", ".join(mapping.get(game_id, []))
 
 @tool
 def search_steam_games(query: str):
