@@ -31,26 +31,58 @@ def format_tags(tags):
     )
 
 def format_price_block(game):
+
     price = game.get("price", "")
     original = game.get("original_price", "")
     discount = game.get("discount", 0)
 
-    if price.lower() == "free":
-        return '<span style="color:#66c0f4; font-weight:bold;">Free</span>'
+    if price == "Free":
+        return """
+        <span style="color:#66c0f4; font-weight:bold;">
+            Free
+        </span>
+        """
 
     if discount > 0:
         return f"""
         <div>
-            <span style="color:#a4d007; font-weight:bold;">-{discount}%</span><br>
-            <span style="text-decoration:line-through; color:#888;">{original}</span><br>
-            <span style="color:#a4d007;">{price}</span>
+            <span style="
+                background:#4c6b22;
+                color:white;
+                padding:3px 6px;
+                border-radius:4px;
+                font-weight:bold;
+            ">
+                -{discount}%
+            </span>
+
+            <div style="
+                text-decoration:line-through;
+                color:#888;
+                margin-top:5px;
+            ">
+                {original}
+            </div>
+
+            <div style="
+                color:#a4d007;
+                font-size:20px;
+                font-weight:bold;
+            ">
+                {price}
+            </div>
         </div>
         """
 
-    if price:
-        return f'<span style="color:#a4d007;">{price}</span>'
-
-    return '<span style="color:#888;">Check on Steam</span>'
+    return f"""
+    <span style="
+        color:#a4d007;
+        font-size:20px;
+        font-weight:bold;
+    ">
+        {price}
+    </span>
+    """
 
 
 def format_rating(game):
@@ -68,24 +100,60 @@ def format_rating(game):
 
 def game_card(game):
 
-    return f"""
-    <a href="{game.get('url')}" target="_blank"
-    style="text-decoration:none; color:white;">
+    # 🚨 Game not available on Steam
+    if game.get("unavailable"):
 
+        return f"""
         <div class="game-card">
-
-            <img src="{game.get('image')}" class="game-image" />
 
             <div class="game-info">
 
                 <h3>{game.get('name')}</h3>
 
                 <div class="tags">
+                    <span class="tag">Unavailable</span>
+                </div>
+
+                <p style="
+                    color:#ffb347;
+                    margin-top:10px;
+                    font-size:14px;
+                ">
+                    ⚠️ {game.get('reason', 'This game is no longer available on Steam.')}
+                </p>
+
+            </div>
+
+        </div>
+        """
+
+    # ✅ Normal Steam game card
+    return f"""
+    <a href="{game.get('url', '#')}"
+       target="_blank"
+       style="text-decoration:none; color:white;">
+
+        <div class="game-card">
+
+            <img
+                src="{game.get('image', '')}"
+                class="game-image"
+            />
+
+            <div class="game-info">
+
+                <h3>{game.get('name', 'Unknown Game')}</h3>
+
+                <div class="tags">
                     {format_tags(game.get("tags", []))}
                 </div>
 
                 <div class="price">
-                    {game.get('price')}
+                    {format_price_block(game)}
+                </div>
+
+                <div>
+                    {format_rating(game)}
                 </div>
 
             </div>
@@ -186,49 +254,55 @@ def render_main_game(query):
 def render_games_list(game_names):
 
     all_games = []
-
     added = set()
-
-    valid_count = 0
 
     for name in game_names:
 
         results = search_games(name)
 
         if not results:
+
+            print(f"No Steam results for: {name}")
+
+            all_games.append({
+                "name": name,
+                "image": "",
+                "price": "Unavailable",
+                "tags": ["Removed from Steam"],
+                "unavailable": True,
+                "reason": "This game is no longer available on Steam."
+            })
+
             continue
 
         best_match = None
 
+        # Try exact/good match first
         for g in results:
 
             if is_good_match(name, g["name"]):
-
-                # 🚫 avoid duplicates
-                if g["name"] in added:
-                    continue
-
                 best_match = g
                 break
 
-        # skip invalid
+        # 🔥 FALLBACK: use first Steam result
         if not best_match:
-            best_match = results[0] if results else None
-        # save game
-        added.add(best_match["name"])
+            best_match = results[0]
 
+        # Avoid duplicates
+        if best_match["name"] in added:
+            continue
+
+        added.add(best_match["name"])
         all_games.append(best_match)
 
-        valid_count += 1
-
-        # ✅ stop only after 5 VALID cards
-        if valid_count >= 5:
+        # Stop after 5 cards
+        if len(all_games) >= 5:
             break
 
     if not all_games:
         return "<p>No matching games found.</p>"
 
-    cards = "".join([game_card(g) for g in all_games])
+    cards = "".join(game_card(g) for g in all_games)
 
     return f"""
     <div style="
@@ -241,10 +315,10 @@ def render_games_list(game_names):
     """
 
 def is_good_match(query, game_name):
+
     query = query.lower()
     game_name = game_name.lower()
 
-    # remove symbols
     query = re.sub(r"[^\w\s]", "", query)
     game_name = re.sub(r"[^\w\s]", "", game_name)
 
@@ -309,6 +383,7 @@ def bot_response(history):
 
     # 🤖 AI recommendations
     game_names = extract_games_from_text(bot_message)
+    print("Extracted games:", game_names)
 
     recommended_games = []
 
