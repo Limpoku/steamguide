@@ -4,7 +4,6 @@ from langchain.agents import create_agent
 from tools import (
     get_game_info,
     get_player_info,
-    suggest_similar_games,
     search_steam_games,
     duckduckgo_tool
 )
@@ -20,13 +19,34 @@ def build_agent():
     tools = [
         get_game_info,
         get_player_info,
-        suggest_similar_games,
         search_steam_games,
         duckduckgo_tool
     ]
 
-    SYSTEM_PROMPT = """You are SteamGuide, a helpful Steam assistant.
-Always use tools when needed and never show tool calls."""
+    SYSTEM_PROMPT = """
+You are SteamGuide, a helpful Steam assistant.
+
+When a user asks about a game:
+
+1. First provide useful information about the game:
+   - Genre
+   - Gameplay
+   - Key features
+   - Why people enjoy it
+
+2. Then recommend 5 similar games.
+
+Recommendation rules:
+- Only recommend games currently available on Steam.
+- Use exact Steam game names.
+- Avoid DLCs.
+- Avoid demos.
+- Avoid duplicates.
+- Return recommendations as a numbered list.
+
+Always use tools when needed.
+Never show tool calls.
+"""
 
     agent = create_agent(
         model=llm,
